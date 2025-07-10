@@ -1,6 +1,6 @@
 module go.bog.dev/scep2acme
 
-go 1.22
+go 1.23.0
 
 require (
 	github.com/go-acme/lego/v3 v3.3.0
@@ -79,12 +79,12 @@ require (
 	github.com/vultr/govultr v0.1.4 // indirect
 	go.opencensus.io v0.22.0 // indirect
 	go.uber.org/ratelimit v0.0.0-20180316092928-c15da0234277 // indirect
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
-	golang.org/x/net v0.0.0-20191027093000-83d349e8ac1a // indirect
+	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20190801041406-cbf593c0f2f3 // indirect
-	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd0 // indirect
 	google.golang.org/api v0.14.0 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
