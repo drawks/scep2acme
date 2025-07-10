@@ -36,7 +36,7 @@ var (
 	certKeyPath   = flag.String("certkey", "", "Path to certificate key")
 	acmeKeyPath   = flag.String("acmekey", "", "Path to ACME account key")
 	acmeEmail     = flag.String("acmeemail", "", "ACME account email address - Terms of Service will be accepted automatically")
-	acmeUrl       = flag.String("acmeurl", lego.LEDirectoryStaging, fmt.Sprintf("ACME directory URL (default is the Let's Encrypt staging directory, to switch to production directory use \"%v\")", lego.LEDirectoryProduction))
+	acmeURL       = flag.String("acmeurl", lego.LEDirectoryStaging, fmt.Sprintf("ACME directory URL (default is the Let's Encrypt staging directory, to switch to production directory use \"%v\")", lego.LEDirectoryProduction))
 	whitelistPath = flag.String("whitelist", "", "Path to hostname whitelist configuration")
 	dnsProvider   = flag.String("dnsprovider", "", "DNS provider used for DNS-01 challenges - environment variables should be used for configuration, docs at https://go-acme.github.io/lego/dns/")
 	debug         = flag.Bool("debug", false, "Enable debug logging")
@@ -58,7 +58,7 @@ func (s serviceWithoutRenewal) GetCACaps(ctx context.Context) ([]byte, error) {
 
 type myDepot struct{}
 
-func (d *myDepot) CA(pass []byte) ([]*x509.Certificate, *rsa.PrivateKey, error) {
+func (d *myDepot) CA(_ []byte) ([]*x509.Certificate, *rsa.PrivateKey, error) {
 	caPEM, err := os.ReadFile(*certPath)
 	if err != nil {
 		return nil, nil, err
@@ -131,12 +131,12 @@ func (d *myDepot) Serial() (*big.Int, error) {
 	return nil, fmt.Errorf("myDepot cannot create certificates")
 }
 
-func (d *myDepot) HasCN(cn string, allowTime int, cert *x509.Certificate, revokeOldCertificate bool) (bool, error) {
+func (d *myDepot) HasCN(_ string, _ int, _ *x509.Certificate, _ bool) (bool, error) {
 	// TODO: does this matter?
 	return false, nil
 }
 
-func (d *myDepot) Put(name string, crt *x509.Certificate) error {
+func (d *myDepot) Put(_ string, _ *x509.Certificate) error {
 	return nil
 }
 
@@ -194,7 +194,7 @@ type csrPasswordVerifier struct {
 	passwordMatchers map[string][]hostnameMatcher
 }
 
-func (c *csrPasswordVerifier) allowedDnsName(password string, dnsName string) bool {
+func (c *csrPasswordVerifier) allowedDNSName(password string, dnsName string) bool {
 	for _, matcher := range c.passwordMatchers[password] {
 		if matcher(dnsName) {
 			return true
@@ -214,13 +214,13 @@ func (c *csrPasswordVerifier) Verify(data []byte) (bool, error) {
 		return false, err
 	}
 
-	if !c.allowedDnsName(cp, csr.Subject.CommonName) {
+	if !c.allowedDNSName(cp, csr.Subject.CommonName) {
 		fmt.Printf("Subject CN not allowed: %v\n", csr.Subject.CommonName)
 		return false, nil
 	}
 
 	for _, name := range csr.DNSNames {
-		if !c.allowedDnsName(cp, name) {
+		if !c.allowedDNSName(cp, name) {
 			fmt.Printf("SAN not allowed: %v\n", name)
 			return false, nil
 		}
@@ -276,7 +276,7 @@ func newCsrPasswordVerifier(yamlPath string) (csrverifier.CSRVerifier, error) {
 func setupAcmeClient() (*lego.Client, error) {
 	acmeUser := &acmeUserInfo{}
 	acmeConfig := lego.NewConfig(acmeUser)
-	acmeConfig.CADirURL = *acmeUrl
+	acmeConfig.CADirURL = *acmeURL
 
 	client, err := lego.NewClient(acmeConfig)
 	if err != nil {
