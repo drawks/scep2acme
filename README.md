@@ -88,6 +88,7 @@ Configure your DNS provider using environment variables. See the [lego DNS provi
 
 - Go 1.21 or later
 - Make
+- Docker and Docker Compose (for integration tests)
 
 ### Building
 
@@ -97,9 +98,75 @@ make build
 
 ### Testing
 
+#### Unit Tests
+
+Run unit tests for all components:
+
 ```bash
 make test
 ```
+
+or
+
+```bash
+make test-unit
+```
+
+#### Integration Tests
+
+The project includes comprehensive integration tests that use HashiCorp Vault and OpenBao as ACME PKI backends.
+
+To run integration tests:
+
+1. Start the test services:
+```bash
+make docker-up
+```
+
+2. Run integration tests:
+```bash
+make test-integration
+```
+
+3. Stop the test services:
+```bash
+make docker-down
+```
+
+To run all tests (unit + integration):
+```bash
+make test-all
+```
+
+#### Test Coverage
+
+Generate test coverage report:
+```bash
+make coverage
+```
+
+Generate coverage including integration tests:
+```bash
+make coverage-all
+```
+
+#### Test Structure
+
+The test suite includes:
+
+- **Unit Tests**: Test individual components in isolation
+  - `depot_test.go` - Tests for certificate and key loading
+  - `verifier_test.go` - Tests for CSR password verification
+  - `acme_test.go` - Tests for ACME client functionality
+  - `main_test.go` - Tests for main application functions
+
+- **Integration Tests**: Test full SCEP workflow with real backends
+  - `integration_test.go` - Tests with HashiCorp Vault and OpenBao
+  - Uses Docker containers for realistic testing environment
+
+- **Test Utilities**: Helper functions for test data generation
+  - `testing_utils.go` - Certificate and key generation utilities
+  - `testdata/` - Test fixtures and configurations
 
 ### Linting
 
@@ -116,10 +183,16 @@ make coverage
 ### Available Make Targets
 
 - `build` - Build the application
-- `test` - Run tests
+- `test` - Run unit tests
+- `test-unit` - Run unit tests only
+- `test-integration` - Run integration tests
+- `test-all` - Run all tests (unit + integration)
 - `lint` - Run linter (go fmt and go vet)
 - `vet` - Run go vet
 - `coverage` - Generate test coverage report
+- `coverage-all` - Generate test coverage with integration tests
+- `docker-up` - Start Docker containers for integration tests
+- `docker-down` - Stop Docker containers for integration tests
 - `clean` - Clean built files
 - `help` - Show help message
 
