@@ -363,7 +363,7 @@ func main() {
 	})
 
 	pool.Go(func(ctx context.Context) error {
-		c := make(chan os.Signal)
+		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGTERM)
 		return fmt.Errorf("%v", <-c)
 	})
