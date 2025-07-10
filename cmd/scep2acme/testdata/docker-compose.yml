@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault-test
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=root
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-data:/vault/data
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  openbao:
+    image: quay.io/openbao/openbao:latest
+    container_name: openbao-test
+    environment:
+      - BAO_DEV_ROOT_TOKEN_ID=root
+      - BAO_DEV_LISTEN_ADDRESS=0.0.0.0:8201
+    ports:
+      - "8201:8201"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - openbao-data:/openbao/data
+    healthcheck:
+      test: ["CMD", "bao", "status"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  vault-data:
+  openbao-data:

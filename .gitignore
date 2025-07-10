@@ -11,6 +11,7 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 coverage.html
+coverage-integration.out
 
 # Go workspace file
 go.work
@@ -28,3 +29,6 @@ scep2acme
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Test temporary files
+/tmp/

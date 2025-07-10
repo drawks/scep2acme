@@ -1,0 +1,9 @@
+password1: example.com
+password2: 
+  - subdomain1.example.com
+  - subdomain2.example.com
+testpass: test.example.com
+multipass:
+  - multi1.example.com
+  - multi2.example.com
+  - multi3.example.com
