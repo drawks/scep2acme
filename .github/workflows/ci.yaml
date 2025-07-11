@@ -24,32 +24,37 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     
-    - name: Download dependencies
+    - name: Go Format
+      run: gofmt -s -w . && git diff --exit-code
+
+    - name: Go Vet
+      run: go vet ./...
+
+    - name: Go Mod - tidy
+      run: go mod tidy && git diff --exit-code
+
+    - name: Go Mod - download
       run: go mod download
     
-    - name: Verify dependencies
+    - name: Go Mod - verify
       run: go mod verify
     
-    - name: Build
-      run: make build
+    - name: Go Generate
+      run: go generate ./... && git diff --exit-code
+
+    - name: Go Build
+      run: go build ./...
     
-    - name: Run tests
-      run: make test
-    
-    - name: Run linter
-      run: make lint
-    
-    - name: Run vet
-      run: make vet
-    
-    - name: Generate coverage
-      run: make coverage
-    
+    - name: Go Test
+      if: ${{ !inputs.skipTests }}
+      run: go test -v -count=1 -race -shuffle=on -coverprofile=coverage.txt ./...
+
+    - name: Go Benchmark
+      run: go test -v -shuffle=on -run=- -bench=. -benchtime=1x ./...
+
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
       with:
-        flags: unittests
         name: codecov-umbrella
         token: ${{ secrets.CODECOV_TOKEN }}
-        verbose: true
         fail_ci_if_error: false
