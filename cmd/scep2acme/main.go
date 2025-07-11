@@ -17,9 +17,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-acme/lego/v3/lego"
-	"github.com/go-acme/lego/v3/providers/dns"
-	"github.com/go-acme/lego/v3/registration"
+	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v4/lego"
+	"github.com/go-acme/lego/v4/providers/dns"
+	"github.com/go-acme/lego/v4/registration"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/micromdm/scep/crypto/x509util"
@@ -173,7 +174,11 @@ func (u *acmeUserInfo) GetPrivateKey() crypto.PrivateKey {
 
 func acmeCreateCertificate(client *lego.Client) scepserver.CertificateSource {
 	return scepserver.CertificateSourceFunc(func(ctx context.Context, msg *scep.PKIMessage) (*x509.Certificate, error) {
-		res, err := client.Certificate.ObtainForCSR(*msg.CSR, false)
+		request := certificate.ObtainForCSRRequest{
+			CSR:    msg.CSR,
+			Bundle: false,
+		}
+		res, err := client.Certificate.ObtainForCSR(request)
 		if err != nil {
 			return nil, fmt.Errorf("ObtainForCSR: %w", err)
 		}
