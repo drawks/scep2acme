@@ -8,7 +8,6 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"net/http"
 	"os"
