@@ -32,3 +32,5 @@ Thumbs.db
 
 # Test temporary files
 /tmp/
+testdata/keys/
+testdata/certs/
