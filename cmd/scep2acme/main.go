@@ -16,6 +16,7 @@ import (
 	"reflect"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/go-acme/lego/v3/lego"
 	"github.com/go-acme/lego/v3/providers/dns"
@@ -36,7 +37,7 @@ var (
 	certKeyPath   = flag.String("certkey", "", "Path to certificate key")
 	acmeKeyPath   = flag.String("acmekey", "", "Path to ACME account key")
 	acmeEmail     = flag.String("acmeemail", "", "ACME account email address - Terms of Service will be accepted automatically")
-	acmeUrl       = flag.String("acmeurl", lego.LEDirectoryStaging, fmt.Sprintf("ACME directory URL (default is the Let's Encrypt staging directory, to switch to production directory use \"%v\")", lego.LEDirectoryProduction))
+	acmeURL       = flag.String("acmeurl", lego.LEDirectoryStaging, fmt.Sprintf("ACME directory URL (default is the Let's Encrypt staging directory, to switch to production directory use \"%v\")", lego.LEDirectoryProduction))
 	whitelistPath = flag.String("whitelist", "", "Path to hostname whitelist configuration")
 	dnsProvider   = flag.String("dnsprovider", "", "DNS provider used for DNS-01 challenges - environment variables should be used for configuration, docs at https://go-acme.github.io/lego/dns/")
 	debug         = flag.Bool("debug", false, "Enable debug logging")
@@ -58,8 +59,8 @@ func (s serviceWithoutRenewal) GetCACaps(ctx context.Context) ([]byte, error) {
 
 type myDepot struct{}
 
-func (d *myDepot) CA(pass []byte) ([]*x509.Certificate, *rsa.PrivateKey, error) {
-	caPEM, err := ioutil.ReadFile(*certPath)
+func (d *myDepot) CA(_ []byte) ([]*x509.Certificate, *rsa.PrivateKey, error) {
+	caPEM, err := os.ReadFile(*certPath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -68,7 +69,7 @@ func (d *myDepot) CA(pass []byte) ([]*x509.Certificate, *rsa.PrivateKey, error) 
 		return nil, nil, err
 	}
 
-	keyPEM, err := ioutil.ReadFile(*certKeyPath)
+	keyPEM, err := os.ReadFile(*certKeyPath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,7 +81,7 @@ func (d *myDepot) CA(pass []byte) ([]*x509.Certificate, *rsa.PrivateKey, error) 
 	return certs, key, nil
 }
 
-func (d *myDepot) loadKey(data []byte, password []byte) (*rsa.PrivateKey, error) {
+func (d *myDepot) loadKey(data []byte, _ []byte) (*rsa.PrivateKey, error) {
 	pemBlock, _ := pem.Decode(data)
 	if pemBlock == nil {
 		return nil, fmt.Errorf("PEM decode failed")
@@ -88,10 +89,19 @@ func (d *myDepot) loadKey(data []byte, password []byte) (*rsa.PrivateKey, error)
 
 	if pemBlock.Type == "RSA PRIVATE KEY" {
 		return x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
-	} else {
-		ret, err := x509.ParsePKCS8PrivateKey(pemBlock.Bytes)
-		return ret.(*rsa.PrivateKey), err
 	}
+
+	ret, err := x509.ParsePKCS8PrivateKey(pemBlock.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	rsaKey, ok := ret.(*rsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("key is not an RSA private key")
+	}
+
+	return rsaKey, nil
 }
 
 func (d *myDepot) loadCerts(data []byte) ([]*x509.Certificate, error) {
@@ -103,9 +113,9 @@ func (d *myDepot) loadCerts(data []byte) ([]*x509.Certificate, error) {
 		if pemBlock == nil {
 			if len(certs) == 0 {
 				return nil, fmt.Errorf("PEM decode failed")
-			} else {
-				break
 			}
+
+			break
 		}
 
 		cert, err := x509.ParseCertificate(pemBlock.Bytes)
@@ -122,12 +132,12 @@ func (d *myDepot) Serial() (*big.Int, error) {
 	return nil, fmt.Errorf("myDepot cannot create certificates")
 }
 
-func (d *myDepot) HasCN(cn string, allowTime int, cert *x509.Certificate, revokeOldCertificate bool) (bool, error) {
+func (d *myDepot) HasCN(_ string, _ int, _ *x509.Certificate, _ bool) (bool, error) {
 	// TODO: does this matter?
 	return false, nil
 }
 
-func (d *myDepot) Put(name string, crt *x509.Certificate) error {
+func (d *myDepot) Put(_ string, _ *x509.Certificate) error {
 	return nil
 }
 
@@ -144,12 +154,15 @@ func (u *acmeUserInfo) GetRegistration() *registration.Resource {
 }
 
 func (u *acmeUserInfo) GetPrivateKey() crypto.PrivateKey {
-	data, err := ioutil.ReadFile(*acmeKeyPath)
+	data, err := os.ReadFile(*acmeKeyPath)
 	if err != nil {
 		panic(err)
 	}
 
-	keyData, data := pem.Decode(data)
+	keyData, _ := pem.Decode(data)
+	if keyData == nil {
+		panic("failed to decode PEM block")
+	}
 
 	key, err := x509.ParsePKCS1PrivateKey(keyData.Bytes)
 	if err != nil {
@@ -182,7 +195,7 @@ type csrPasswordVerifier struct {
 	passwordMatchers map[string][]hostnameMatcher
 }
 
-func (c *csrPasswordVerifier) allowedDnsName(password string, dnsName string) bool {
+func (c *csrPasswordVerifier) allowedDNSName(password string, dnsName string) bool {
 	for _, matcher := range c.passwordMatchers[password] {
 		if matcher(dnsName) {
 			return true
@@ -202,13 +215,13 @@ func (c *csrPasswordVerifier) Verify(data []byte) (bool, error) {
 		return false, err
 	}
 
-	if !c.allowedDnsName(cp, csr.Subject.CommonName) {
+	if !c.allowedDNSName(cp, csr.Subject.CommonName) {
 		fmt.Printf("Subject CN not allowed: %v\n", csr.Subject.CommonName)
 		return false, nil
 	}
 
 	for _, name := range csr.DNSNames {
-		if !c.allowedDnsName(cp, name) {
+		if !c.allowedDNSName(cp, name) {
 			fmt.Printf("SAN not allowed: %v\n", name)
 			return false, nil
 		}
@@ -226,7 +239,7 @@ func hostnameExactMatcher(name string) func(string) bool {
 }
 
 func newCsrPasswordVerifier(yamlPath string) (csrverifier.CSRVerifier, error) {
-	data, err := ioutil.ReadFile(yamlPath)
+	data, err := os.ReadFile(yamlPath)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}
@@ -249,9 +262,9 @@ func newCsrPasswordVerifier(yamlPath string) (csrverifier.CSRVerifier, error) {
 		}
 
 		for _, item := range items {
-			switch item.(type) {
+			switch v := item.(type) {
 			case string:
-				c.passwordMatchers[pass] = append(c.passwordMatchers[pass], hostnameExactMatcher(item.(string)))
+				c.passwordMatchers[pass] = append(c.passwordMatchers[pass], hostnameExactMatcher(v))
 			default:
 				return nil, fmt.Errorf("unknown item: %v (type %v)", item, reflect.TypeOf(item))
 			}
@@ -264,7 +277,7 @@ func newCsrPasswordVerifier(yamlPath string) (csrverifier.CSRVerifier, error) {
 func setupAcmeClient() (*lego.Client, error) {
 	acmeUser := &acmeUserInfo{}
 	acmeConfig := lego.NewConfig(acmeUser)
-	acmeConfig.CADirURL = *acmeUrl
+	acmeConfig.CADirURL = *acmeURL
 
 	client, err := lego.NewClient(acmeConfig)
 	if err != nil {
@@ -300,9 +313,9 @@ func main() {
 
 	mandatoryFlag("cert", certPath)
 	mandatoryFlag("certkey", certKeyPath)
-	mandatoryFlag("acmeemail", acmeKeyPath)
+	mandatoryFlag("acmeemail", acmeEmail)
 	mandatoryFlag("acmekey", acmeKeyPath)
-	mandatoryFlag("dnsprovider", acmeKeyPath)
+	mandatoryFlag("dnsprovider", dnsProvider)
 	mandatoryFlag("whitelist", whitelistPath)
 
 	client, err := setupAcmeClient()
@@ -352,15 +365,21 @@ func main() {
 	pool := errpool.Unbounded(context.Background())
 
 	server := http.Server{
-		Addr:    *listenPort,
-		Handler: h,
+		Addr:              *listenPort,
+		Handler:           h,
+		ReadHeaderTimeout: 30 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 	pool.Go(func(ctx context.Context) error {
 		return server.ListenAndServe()
 	})
 	pool.Go(func(ctx context.Context) error {
 		<-ctx.Done()
-		return server.Shutdown(context.Background())
+		shutdownCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		return server.Shutdown(shutdownCtx)
 	})
 
 	pool.Go(func(ctx context.Context) error {
@@ -369,5 +388,8 @@ func main() {
 		return fmt.Errorf("%v", <-c)
 	})
 
-	lginfo.Log("terminated", pool.Wait())
+	if err := lginfo.Log("terminated", pool.Wait()); err != nil {
+		// Log error is typically not critical for application termination
+		fmt.Fprintf(os.Stderr, "failed to log termination: %v\n", err)
+	}
 }
