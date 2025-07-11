@@ -58,9 +58,9 @@ func TestCsrPasswordVerifier_allowedDnsName(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := cpv.allowedDnsName(tt.password, tt.hostname)
+		result := cpv.allowedDNSName(tt.password, tt.hostname)
 		if result != tt.expected {
-			t.Errorf("allowedDnsName(%q, %q) = %v, expected %v", tt.password, tt.hostname, result, tt.expected)
+			t.Errorf("allowedDNSName(%q, %q) = %v, expected %v", tt.password, tt.hostname, result, tt.expected)
 		}
 	}
 }
