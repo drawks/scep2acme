@@ -80,34 +80,34 @@ func TestMyDepot_CA(t *testing.T) {
 
 func TestMyDepot_LoadCerts(t *testing.T) {
 	depot := &myDepot{}
-	
+
 	// Test valid PEM data
 	caPEM, raPEM, _, _, err := generateTestCAAndRA()
 	if err != nil {
 		t.Fatalf("Failed to generate test certificates: %v", err)
 	}
-	
+
 	// Test single certificate
 	certs, err := depot.loadCerts(caPEM)
 	if err != nil {
 		t.Fatalf("loadCerts() failed for single cert: %v", err)
 	}
-	
+
 	if len(certs) != 1 {
 		t.Errorf("Expected 1 certificate, got %d", len(certs))
 	}
-	
+
 	// Test multiple certificates
 	combinedPEM := append(raPEM, caPEM...)
 	certs, err = depot.loadCerts(combinedPEM)
 	if err != nil {
 		t.Fatalf("loadCerts() failed for multiple certs: %v", err)
 	}
-	
+
 	if len(certs) != 2 {
 		t.Errorf("Expected 2 certificates, got %d", len(certs))
 	}
-	
+
 	// Test invalid PEM data
 	invalidPEM := []byte("invalid pem data")
 	_, err = depot.loadCerts(invalidPEM)
@@ -118,44 +118,44 @@ func TestMyDepot_LoadCerts(t *testing.T) {
 
 func TestMyDepot_LoadKey(t *testing.T) {
 	depot := &myDepot{}
-	
+
 	// Test PKCS1 private key
 	_, _, _, raKeyPEM, err := generateTestCAAndRA()
 	if err != nil {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
-	
+
 	key, err := depot.loadKey(raKeyPEM, nil)
 	if err != nil {
 		t.Fatalf("loadKey() failed for PKCS1 key: %v", err)
 	}
-	
+
 	if key == nil {
 		t.Error("Expected private key, got nil")
 	}
-	
+
 	// Test PKCS8 private key
 	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate RSA key: %v", err)
 	}
-	
+
 	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(rsaKey)
 	if err != nil {
 		t.Fatalf("Failed to marshal PKCS8 key: %v", err)
 	}
-	
+
 	pkcs8PEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8Bytes})
-	
+
 	key, err = depot.loadKey(pkcs8PEM, nil)
 	if err != nil {
 		t.Fatalf("loadKey() failed for PKCS8 key: %v", err)
 	}
-	
+
 	if key == nil {
 		t.Error("Expected private key, got nil")
 	}
-	
+
 	// Test invalid key data
 	invalidPEM := []byte("invalid pem data")
 	_, err = depot.loadKey(invalidPEM, nil)
@@ -166,7 +166,7 @@ func TestMyDepot_LoadKey(t *testing.T) {
 
 func TestMyDepot_Serial(t *testing.T) {
 	depot := &myDepot{}
-	
+
 	_, err := depot.Serial()
 	if err == nil {
 		t.Error("Expected error from Serial() method")
@@ -175,12 +175,12 @@ func TestMyDepot_Serial(t *testing.T) {
 
 func TestMyDepot_HasCN(t *testing.T) {
 	depot := &myDepot{}
-	
+
 	hasCN, err := depot.HasCN("test.example.com", 0, nil, false)
 	if err != nil {
 		t.Fatalf("HasCN() failed: %v", err)
 	}
-	
+
 	if hasCN {
 		t.Error("Expected HasCN to return false")
 	}
@@ -188,7 +188,7 @@ func TestMyDepot_HasCN(t *testing.T) {
 
 func TestMyDepot_Put(t *testing.T) {
 	depot := &myDepot{}
-	
+
 	err := depot.Put("test", nil)
 	if err != nil {
 		t.Fatalf("Put() failed: %v", err)

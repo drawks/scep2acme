@@ -69,11 +69,11 @@ func generateTestCAAndRA() (caPEM, raPEM, caKeyPEM, raKeyPEM []byte, err error) 
 	caTemplate := x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
-			Organization:  []string{"Test CA Organization"},
-			Country:       []string{"US"},
-			Province:      []string{"CA"},
-			Locality:      []string{"Test City"},
-			CommonName:    "Test CA",
+			Organization: []string{"Test CA Organization"},
+			Country:      []string{"US"},
+			Province:     []string{"CA"},
+			Locality:     []string{"Test City"},
+			CommonName:   "Test CA",
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(365 * 24 * time.Hour),
@@ -99,11 +99,11 @@ func generateTestCAAndRA() (caPEM, raPEM, caKeyPEM, raKeyPEM []byte, err error) 
 	raTemplate := x509.Certificate{
 		SerialNumber: big.NewInt(2),
 		Subject: pkix.Name{
-			Organization:  []string{"Test RA Organization"},
-			Country:       []string{"US"},
-			Province:      []string{"CA"},
-			Locality:      []string{"Test City"},
-			CommonName:    "Test RA",
+			Organization: []string{"Test RA Organization"},
+			Country:      []string{"US"},
+			Province:     []string{"CA"},
+			Locality:     []string{"Test City"},
+			CommonName:   "Test RA",
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(365 * 24 * time.Hour),

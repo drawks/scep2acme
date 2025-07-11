@@ -11,13 +11,13 @@ import (
 func TestMain(m *testing.M) {
 	// Setup test environment
 	setupTestEnvironment()
-	
+
 	// Run tests
 	code := m.Run()
-	
+
 	// Cleanup
 	cleanupTestEnvironment()
-	
+
 	os.Exit(code)
 }
 
@@ -27,49 +27,49 @@ func setupTestEnvironment() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	acmeKeyPEM, err := generateTestACMEKey()
 	if err != nil {
 		panic(err)
 	}
-	
+
 	// Write test files to testdata directory
 	certFile := filepath.Join("testdata", "certs", "combined.pem")
 	keyFile := filepath.Join("testdata", "keys", "ra.key")
 	acmeKeyFile := filepath.Join("testdata", "keys", "acme.key")
-	
+
 	// Ensure directories exist
 	os.MkdirAll(filepath.Dir(certFile), 0755)
 	os.MkdirAll(filepath.Dir(keyFile), 0755)
 	os.MkdirAll(filepath.Dir(acmeKeyFile), 0755)
-	
+
 	// Write combined certificate (RA + CA)
 	combinedCert := append(raPEM, caPEM...)
 	if err := ioutil.WriteFile(certFile, combinedCert, 0644); err != nil {
 		panic(err)
 	}
-	
+
 	if err := ioutil.WriteFile(keyFile, raKeyPEM, 0600); err != nil {
 		panic(err)
 	}
-	
+
 	if err := ioutil.WriteFile(acmeKeyFile, acmeKeyPEM, 0600); err != nil {
 		panic(err)
 	}
-	
+
 	// Write individual CA and RA files for specific tests
 	caFile := filepath.Join("testdata", "certs", "ca.pem")
 	raFile := filepath.Join("testdata", "certs", "ra.pem")
 	caKeyFile := filepath.Join("testdata", "keys", "ca.key")
-	
+
 	if err := ioutil.WriteFile(caFile, caPEM, 0644); err != nil {
 		panic(err)
 	}
-	
+
 	if err := ioutil.WriteFile(raFile, raPEM, 0644); err != nil {
 		panic(err)
 	}
-	
+
 	if err := ioutil.WriteFile(caKeyFile, caKeyPEM, 0600); err != nil {
 		panic(err)
 	}
@@ -84,9 +84,9 @@ func cleanupTestEnvironment() {
 func TestApplicationStartupValidation(t *testing.T) {
 	// Test that all required flags are validated
 	tests := []struct {
-		name     string
-		flagName string
-		value    interface{}
+		name        string
+		flagName    string
+		value       interface{}
 		shouldPanic bool
 	}{
 		{"cert required", "cert", (*string)(nil), true},
@@ -102,7 +102,7 @@ func TestApplicationStartupValidation(t *testing.T) {
 		{"whitelist required", "whitelist", (*string)(nil), true},
 		{"whitelist provided", "whitelist", stringPtr("whitelist.yaml"), false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			defer func() {
@@ -111,7 +111,7 @@ func TestApplicationStartupValidation(t *testing.T) {
 					t.Errorf("Expected panic=%v, got panic=%v", tt.shouldPanic, r != nil)
 				}
 			}()
-			
+
 			mandatoryFlag(tt.flagName, tt.value)
 		})
 	}
@@ -125,11 +125,11 @@ func TestConfigurationLoading(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to load whitelist: %v", err)
 	}
-	
+
 	if verifier == nil {
 		t.Error("Expected verifier, got nil")
 	}
-	
+
 	// Test invalid whitelist file
 	invalidPath := filepath.Join("testdata", "configs", "nonexistent.yaml")
 	_, err = newCsrPasswordVerifier(invalidPath)
@@ -145,18 +145,18 @@ func TestServiceCreation(t *testing.T) {
 	if depot == nil {
 		t.Error("Failed to create depot")
 	}
-	
+
 	// Test CSR verifier creation
 	whitelistPath := filepath.Join("testdata", "configs", "whitelist.yaml")
 	verifier, err := newCsrPasswordVerifier(whitelistPath)
 	if err != nil {
 		t.Fatalf("Failed to create CSR verifier: %v", err)
 	}
-	
+
 	if verifier == nil {
 		t.Error("Expected verifier, got nil")
 	}
-	
+
 	// Test ACME user info
 	originalEmail := *acmeEmail
 	originalKeyPath := *acmeKeyPath
@@ -164,15 +164,15 @@ func TestServiceCreation(t *testing.T) {
 		*acmeEmail = originalEmail
 		*acmeKeyPath = originalKeyPath
 	}()
-	
+
 	*acmeEmail = "test@example.com"
 	*acmeKeyPath = filepath.Join("testdata", "keys", "acme.key")
-	
+
 	user := &acmeUserInfo{}
 	if user.GetEmail() != "test@example.com" {
 		t.Errorf("Expected email=test@example.com, got %s", user.GetEmail())
 	}
-	
+
 	privateKey := user.GetPrivateKey()
 	if privateKey == nil {
 		t.Error("Expected private key, got nil")
@@ -183,22 +183,22 @@ func TestServiceCreation(t *testing.T) {
 func TestErrorHandling(t *testing.T) {
 	// Test depot with missing files
 	depot := &myDepot{}
-	
+
 	originalCertPath := *certPath
 	originalKeyPath := *certKeyPath
 	defer func() {
 		*certPath = originalCertPath
 		*certKeyPath = originalKeyPath
 	}()
-	
+
 	*certPath = "nonexistent.pem"
 	*certKeyPath = "nonexistent.key"
-	
+
 	_, _, err := depot.CA(nil)
 	if err == nil {
 		t.Error("Expected error for missing cert file")
 	}
-	
+
 	// Test CSR verifier with invalid file
 	_, err = newCsrPasswordVerifier("nonexistent.yaml")
 	if err == nil {
@@ -211,12 +211,12 @@ func TestServiceWithoutRenewal(t *testing.T) {
 	// Test caps modification
 	originalCaps := "POSTPKIOperation\nSHA-1\nSHA-256\nRenewal\nAES"
 	expectedCaps := "POSTPKIOperation\nSHA-1\nSHA-256\nAES"
-	
+
 	// This tests the logic from serviceWithoutRenewal.GetCACaps
 	newCaps := " " + originalCaps + " "
 	newCaps = strings.Replace(newCaps, "\nRenewal\n", "\n", -1)
 	newCaps = newCaps[1 : len(newCaps)-1]
-	
+
 	if newCaps != expectedCaps {
 		t.Errorf("Expected caps=%q, got %q", expectedCaps, newCaps)
 	}
@@ -226,7 +226,7 @@ func TestServiceWithoutRenewal(t *testing.T) {
 func TestHostnameMatching(t *testing.T) {
 	// Test exact matcher
 	matcher := hostnameExactMatcher("example.com")
-	
+
 	tests := []struct {
 		hostname string
 		expected bool
@@ -237,7 +237,7 @@ func TestHostnameMatching(t *testing.T) {
 		{"", false},
 		{"EXAMPLE.COM", false}, // case sensitive
 	}
-	
+
 	for _, tt := range tests {
 		result := matcher(tt.hostname)
 		if result != tt.expected {
@@ -253,31 +253,31 @@ func TestUtilities(t *testing.T) {
 	if err != nil {
 		t.Fatalf("generateTestCertAndKey() failed: %v", err)
 	}
-	
+
 	if len(certPEM) == 0 {
 		t.Error("Expected certificate PEM data")
 	}
-	
+
 	if len(keyPEM) == 0 {
 		t.Error("Expected key PEM data")
 	}
-	
+
 	// Test CA and RA generation
 	caPEM, raPEM, caKeyPEM, raKeyPEM, err := generateTestCAAndRA()
 	if err != nil {
 		t.Fatalf("generateTestCAAndRA() failed: %v", err)
 	}
-	
+
 	if len(caPEM) == 0 || len(raPEM) == 0 || len(caKeyPEM) == 0 || len(raKeyPEM) == 0 {
 		t.Error("Expected all CA/RA components to be generated")
 	}
-	
+
 	// Test ACME key generation
 	acmeKeyPEM, err := generateTestACMEKey()
 	if err != nil {
 		t.Fatalf("generateTestACMEKey() failed: %v", err)
 	}
-	
+
 	if len(acmeKeyPEM) == 0 {
 		t.Error("Expected ACME key PEM data")
 	}
@@ -306,7 +306,7 @@ func TestFlagValidation(t *testing.T) {
 			expectPanic: false,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Note: Full flag validation testing would require refactoring
@@ -325,19 +325,19 @@ func TestEdgeCases(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
-	
+
 	// Test empty certificate file
 	emptyFile := filepath.Join(tempDir, "empty.pem")
 	if err := ioutil.WriteFile(emptyFile, []byte(""), 0644); err != nil {
 		t.Fatalf("Failed to write empty file: %v", err)
 	}
-	
+
 	depot := &myDepot{}
 	_, err = depot.loadCerts([]byte(""))
 	if err == nil {
 		t.Error("Expected error for empty certificate data")
 	}
-	
+
 	// Test malformed PEM
 	malformedPEM := []byte("-----BEGIN CERTIFICATE-----\nmalformed\n-----END CERTIFICATE-----")
 	_, err = depot.loadCerts(malformedPEM)
