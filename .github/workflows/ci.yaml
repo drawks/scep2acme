@@ -17,10 +17,10 @@ jobs:
         go-version: ['stable', 'oldstable']
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
     
     - name: Set up Go ${{ matrix.go-version }}
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
       with:
         go-version: ${{ matrix.go-version }}
     
@@ -53,7 +53,7 @@ jobs:
       run: go test -v -shuffle=on -run=- -bench=. -benchtime=1x ./...
 
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5
       with:
         name: codecov-umbrella
         token: ${{ secrets.CODECOV_TOKEN }}
