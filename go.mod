@@ -218,3 +218,5 @@ require (
 replace github.com/fullsailor/pkcs7 => github.com/groob/pkcs7 v0.0.0-20180824154052-36585635cb64
 
 replace github.com/micromdm/scep => go.bog.dev/micromdm-scep v1.0.1-0.20200121202423-f5052c70aa47
+
+replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
