@@ -1,6 +1,8 @@
 # Makefile for scep2acme
 
-.PHONY: build test lint vet clean coverage help fmt mod-tidy mod-download mod-verify generate bench binary
+.PHONY: build binary fmt generate mod-tidy mod-download mod-verify vet
+.PHONY: test coverage bench lint
+.PHONY: clean help
 
 # Build the application (depends on preparation steps)
 build: fmt generate mod-tidy vet
