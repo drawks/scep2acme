@@ -18,9 +18,11 @@ test: build
 fmt:
 	gofmt -s -w .
 
-# Run linter (format check, vet, and module operations)
-lint: fmt mod-tidy mod-verify vet
+# Run linter (format check and vet)
+lint: fmt vet
 
+# Run module operations for linting
+lint-modules: mod-tidy mod-verify
 # Run go vet (depends on mod operations)
 vet: mod-download
 	go vet ./...
