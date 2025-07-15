@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/go-acme/lego/v4 v4.24.0
-	github.com/go-kit/kit v0.12.0
+	github.com/go-kit/kit v0.13.0
 	github.com/micromdm/scep v1.0.1-0.20181219164221-1e0c4b782f3f
 	go.bog.dev/errpool v0.0.0-20191129185448-a143b125d7bb
 	gopkg.in/yaml.v2 v2.4.0
